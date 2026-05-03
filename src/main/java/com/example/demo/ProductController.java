@@ -3,6 +3,7 @@ package com.example.demo;
 import com.example.demo.ProductRequest;
 import com.example.demo.ProductResponse;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,4 +44,13 @@ public class ProductController {
         tempStorage.add(newProduct);
         return "물품 등록 성공! ID: " + newId;
     }
-}
+
+        // 3. 물품 상세 조회 (GET)
+        @GetMapping("/api/products/{id}")
+        public ProductResponse getProductDetail(@PathVariable("id") Long id) {
+            return tempStorage.stream()
+                    .filter(product -> product.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
