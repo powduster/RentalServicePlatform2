@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEPOSIT - 익산 안심 렌탈</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f8f9fb; color: #333; }
+        
+        /* [수정] 네이버처럼 큰 로고를 수용하기 위해 nav 높이를 100px로 조절 */
+        .nav { background: white; padding: 0 50px; height: 100px; display: flex; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 1000; }
+        
+        .logo-container { display: flex; align-items: center; gap: 15px; cursor: pointer; text-decoration: none; color: inherit; }
+        
+        /* [수정] 네이버 스타일의 대형 로고 설정 (너비 160px) */
+        .site-logo { 
+            width: 160px; 
+            height: auto; 
+            max-height: 70px;
+            object-fit: contain; 
+        }
+        
+        .nav-logo-text { font-weight: 800; color: #1a73e8; font-size: 30px; letter-spacing: -1.5px; }
+        
+        .nav-right { margin-left: auto; display: flex; align-items: center; gap: 15px; }
+        
+        .btn-auth { padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #ddd; background: white; }
+        .btn-join { background: #1a73e8; color: white; border: none; }
+        .btn-add-item { background: #34a853; color: white; border: none; display: none; padding: 10px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+        #user-group { display: none; align-items: center; gap: 20px; }
+        .deposit-amount { font-size: 15px; font-weight: 800; color: #1a73e8; }
+        .profile-box { display: flex; align-items: center; gap: 10px; padding: 5px 15px; background: #f1f3f5; border-radius: 30px; cursor: pointer; }
+        .profile-img { width: 32px; height: 32px; background: #1a73e8; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+
+        .hero-section { padding: 20px 10%; background: white; border-bottom: 1px solid #eee; }
+        #map { width: 100%; height: 350px; border-radius: 15px; z-index: 1; border: 1px solid #ddd; }
+        
+        .main-container { max-width: 1300px; margin: 30px auto 60px; padding: 0 20px; display: flex; gap: 30px; }
+        .sidebar { width: 240px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: fit-content; position: sticky; top: 130px; }
+        .sidebar h3 { font-size: 15px; margin: 20px 0 10px; color: #1a73e8; border-bottom: 2px solid #f0f4f8; padding-bottom: 5px; }
+        .sidebar div { padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #555; transition: 0.2s; }
+        .sidebar div.active { background: #1a73e8 !important; color: white !important; font-weight: 700; }
+
+        .product-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .card-img { height: 180px; background: #eee; }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .card-body { padding: 15px; }
+
+        #profile-view { display: none; max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .my-item-list { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
+        .my-item-card { display: flex; align-items: center; gap: 15px; padding: 10px; border-bottom: 1px solid #eee; }
+        .my-item-img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+        .my-item-btns { margin-left: auto; display: flex; gap: 5px; }
+        .btn-edit { background: #ff9800; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-del { background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; width: 420px; border-radius: 20px; padding: 30px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; font-weight: 600; }
+        .form-input { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; }
+        .input-btn-row { display: flex; gap: 8px; }
+        .btn-small { padding: 0 12px; background: #f1f3f5; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        .btn-main { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        
+        .msg { font-size: 11px; margin-top: 5px; display: none; font-weight: 500; }
+        .msg.err { color: #d93025; display: block; }
+        .msg.ok { color: #188038; display: block; }
+
+        #img-preview, #edit-img-preview { width: 100%; height: 150px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa; font-size: 12px; color: #999; }
+        #img-preview img, #edit-img-preview img { width: 100%; height: 100%; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="#" class="logo-container" onclick="goMain(); return false;">
+        <img src="기연프.png" alt="DEPOSIT 로고" class="site-logo">
+        <span class="nav-logo-text">DEPOSIT</span>
+    </a>
+    
+    <div class="nav-right">
+        <button id="btn-add-item" class="btn-add-item" onclick="openModal('modal-add')">물품 등록하기 +</button>
+        <div id="auth-group">
+            <button class="btn-auth" onclick="openModal('modal-login')">로그인</button>
+            <button class="btn-auth btn-join" onclick="openModal('modal-join')">회원가입</button>
+        </div>
+        <div id="user-group">
+            <div style="text-align:right">
+                <span style="font-size:11px; color:#888;">보증금</span><br>
+                <span class="deposit-amount"><span id="user-deposit">0</span>원</span>
+            </div>
+            <div class="profile-box" onclick="goProfile()">
+                <div class="profile-img" id="profile-initial">?</div>
+                <span id="user-name-display" style="font-weight:700; font-size:14px;"></span>
+            </div>
+            <button class="btn-auth" onclick="logout()" style="font-size:12px;">로그아웃</button>
+        </div>
+    </div>
+</nav>
+
+<div id="main-view">
+    <div class="hero-section"><div id="map"></div></div>
+    <div class="main-container">
+        <aside class="sidebar">
+            <h3>📂 카테고리</h3>
+            <div onclick="filterCat('all', this)" class="cat-item active">전체 보기</div>
+            <div onclick="filterCat('book', this)" class="cat-item">도서/교육</div>
+            <div onclick="filterCat('tech', this)" class="cat-item">가전/디지털</div>
+            <div onclick="filterCat('leisure', this)" class="cat-item">스포츠/레저</div>
+            <h3>📍 지역</h3>
+            <div onclick="filterLoc('all', this)" class="loc-item active">전체 익산</div>
+            <div onclick="filterLoc('신동', this)" class="loc-item">신동</div>
+            <div onclick="filterLoc('모현동', this)" class="loc-item">모현동</div>
+            <div onclick="filterLoc('영등동', this)" class="loc-item">영등동</div>
+            <div onclick="filterLoc('남중동', this)" class="loc-item">남중동</div>
+        </aside>
+        <div class="product-grid" id="main-grid"></div>
+    </div>
+</div>
+
+<div id="profile-view">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>마이페이지</h2>
+        <button onclick="goMain()" style="padding:8px 15px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">홈으로</button>
+    </div>
+    <div style="margin-top:20px; padding:20px; background:#f1f3f5; border-radius:12px;">
+        <p><strong>닉네임:</strong> <span id="my-name"></span></p>
+        <p><strong>보유 보증금:</strong> <span id="my-deposit"></span>원</p>
+    </div>
+    <div class="my-item-list">
+        <h3 style="margin-bottom:15px;">내가 등록한 물품 관리</h3>
+        <div id="my-products-container"></div>
+    </div>
+    <div style="margin-top:50px; padding-top:20px; border-top:1px solid #eee; text-align:right;">
+        <button onclick="withdrawUser()" style="color:#d93025; background:none; border:none; text-decoration:underline; cursor:pointer; font-size:13px;">회원 탈퇴하기</button>
+    </div>
+</div>
+
+<div class="modal" id="modal-add"><div class="modal-content">
+    <h2 style="margin-bottom:15px;">내 물품 등록</h2>
+    <div class="form-group"><label class="form-label">물품 사진</label><input type="file" accept="image/*" onchange="previewImage(this, 'img-preview')"><div id="img-preview">이미지 미리보기</div></div>
+    <div class="form-group"><label class="form-label">물품명</label><input type="text" id="add-title" class="form-input"></div>
+    <div class="form-group"><label class="form-label">카테고리</label><select id="add-cat" class="form-input"><option value="book">도서/교육</option><option value="tech">가전/디지털</option><option value="leisure">스포츠/레저</option></select></div>
+    <div class="form-group"><label class="form-label">대여 지역</label><select id="add-loc" class="form-input"><option value="신동">신동</option><option value="모현동">모현동</option><option value="영등동">영등동</option><option value="남중동">남중동</option></select></div>
+    <div class="form-group"><label class="form-label">일일 대여료 (원)</label><input type="number" id="add-price" class="form-input"></div>
+    <button class="btn-main" style="background:#34a853;" onclick="submitProduct()">등록하기</button>
+    <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999;">취소</button>
+</div></div>
+
+<div class="modal" id="modal-edit"><div class="modal-content">
+    <h2 style="margin-bottom:15px;">물품 정보 수정</h2>
+    <input type="hidden" id="edit-id">
+    <div class="form-group"><label class="form-label">물품 사진 (변경시에만)</label><input type="file" accept="image/*" onchange="previewImage(this, 'edit-img-preview')"><div id="edit-img-preview"></div></div>
+    <div class="form-group"><label class="form-label">물품명</label><input type="text" id="edit-title" class="form-input"></div>
+    <div class="form-group"><label class="form-label">일일 대여료 (원)</label><input type="number" id="edit-price" class="form-input"></div>
+    <button class="btn-main" style="background:#ff9800;" onclick="saveEditProduct()">수정 완료</button>
+    <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999;">취소</button>
+</div></div>
+
+<div class="modal" id="modal-join"><div class="modal-content">
+    <h2 style="margin-bottom:15px;">회원가입</h2>
+    <div class="form-group"><label class="form-label">아이디</label><input type="text" id="join-id" class="form-input"></div>
+    <div class="form-group"><label class="form-label">비밀번호</label><input type="password" id="join-pw" class="form-input"></div>
+    <div class="form-group"><label class="form-label">비밀번호 확인</label><input type="password" id="join-pw-confirm" class="form-input"></div>
+    <div class="form-group">
+        <label class="form-label">닉네임</label>
+        <div class="input-btn-row"><input type="text" id="join-name" class="form-input"><button class="btn-small" onclick="checkNick()">중복확인</button></div>
+        <div id="nick-msg" class="msg"></div>
+    </div>
+    <div class="form-group">
+        <label class="form-label">이메일 인증</label>
+        <div class="input-btn-row"><input type="email" id="join-email" class="form-input" placeholder="example@email.com"><button class="btn-small" onclick="sendEmailCode()">코드발송</button></div>
+    </div>
+    <div id="email-verify-area" style="display:none; background:#f8f9fb; padding:10px; border-radius:8px; margin-top:10px;">
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">인증코드 입력</label><div class="input-btn-row"><input type="text" id="join-code" class="form-input"><button class="btn-small" onclick="verifyEmailCode()">인증하기</button></div><div id="email-msg" class="msg"></div></div>
+    </div>
+    <button class="btn-main" onclick="finalizeJoin()">가입완료</button>
+    <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999;">취소</button>
+</div></div>
+
+<div class="modal" id="modal-login"><div class="modal-content">
+    <h2>로그인</h2>
+    <input type="text" id="login-id" class="form-input" placeholder="아이디" style="margin-top:15px;"><input type="password" id="login-pw" class="form-input" placeholder="비밀번호" style="margin-top:10px;"><button class="btn-main" onclick="doLogin()">로그인</button>
+</div></div>
+
+<script>
+let map, markers = [];
+let currentUser = null;
+let users = [{id:'admin', pw:'1234', name:'운영자', deposit:100000}];
+let isNickOk = false, isEmailOk = false, sentCode = "";
+let uploadedImgBase64 = "";
+
+const products = [
+    { id:1, owner:'admin', cat:'book', loc:'신동', lat:35.967, lng:126.957, title:'[신동] 경제학 원론', price:5000, img:'https://images.unsplash.com/photo-1592492159418-39f319320569?w=400' },
+    { id:2, owner:'익산책벌레', cat:'book', loc:'모현동', lat:35.945, lng:126.939, title:'[모현동] 미생물학 실험서', price:8000, img:'https://images.unsplash.com/photo-1544640808-32ca72ac7f37?w=400' },
+    { id:3, owner:'코딩왕', cat:'book', loc:'신동', lat:35.969, lng:126.955, title:'[신동] 자바 프로그래밍', price:4000, img:'https://images.unsplash.com/photo-1589998059171-988d887df646?w=400' },
+    { id:4, owner:'심리술사', cat:'book', loc:'남중동', lat:35.948, lng:126.958, title:'[남중동] 심리학의 이해', price:6000, img:'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400' },
+    { id:5, owner:'사진작가', cat:'tech', loc:'영등동', lat:35.955, lng:126.975, title:'[영등동] 미러리스 카메라', price:25000, img:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400' },
+    { id:6, owner:'영화광', cat:'tech', loc:'신동', lat:35.965, lng:126.958, title:'[신동] 삼성 빔프로젝터', price:15000, img:'https://images.unsplash.com/photo-1535016120720-40c646bebbdc?w=400' },
+    { id:7, owner:'앱등이', cat:'tech', loc:'모현동', lat:35.943, lng:126.936, title:'[모현동] 아이패드 에어 5', price:20000, img:'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400' },
+    { id:8, owner:'음악대장', cat:'tech', loc:'영등동', lat:35.958, lng:126.978, title:'[영등동] 노이즈캔슬링 헤드폰', price:10000, img:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400' },
+    { id:9, owner:'캠핑족', cat:'leisure', loc:'신동', lat:35.970, lng:126.953, title:'[신동] 4인용 텐트', price:12000, img:'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=400' },
+    { id:10, owner:'질주본능', cat:'leisure', loc:'남중동', lat:35.951, lng:126.954, title:'[남중동] 전동 킥보드', price:9000, img:'https://images.unsplash.com/photo-1558244410-67ada744249a?w=400' },
+    { id:11, owner:'등산가', cat:'leisure', loc:'모현동', lat:35.941, lng:126.932, title:'[모현동] 등산 배낭', price:5000, img:'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400' },
+    { id:12, owner:'나들이꾼', cat:'leisure', loc:'영등동', lat:35.953, lng:126.972, title:'[영등동] 피크닉 세트', price:3000, img:'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400' }
+];
+
+function init() {
+    map = L.map('map').setView([35.955, 126.955], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    render(products);
+}
+
+function render(data) {
+    const grid = document.getElementById('main-grid');
+    markers.forEach(m => map.removeLayer(m)); markers = [];
+    grid.innerHTML = data.map(p => {
+        const dep = Math.floor(p.price * 0.2);
+        const marker = L.marker([p.lat, p.lng]).addTo(map).bindPopup(`<b>${p.title}</b><br>대여자: ${p.owner}`);
+        markers.push(marker);
+        return `<div class="card"><div class="card-img"><img src="${p.img}"></div><div class="card-body"><div style="font-size:11px; color:#888;">대여자: ${p.owner}</div><div style="font-weight:700; height:35px; margin-top:3px;">${p.title}</div><div style="font-size:18px; font-weight:800; color:#1a73e8; margin-top:5px;">₩${p.price.toLocaleString()}</div><div style="font-size:12px; color:#ff6b00;">보증금: ₩${dep.toLocaleString()}</div><button onclick="rentItem(${p.price}, ${dep})" style="width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #eee; cursor:pointer;">대여 신청</button></div></div>`;
+    }).join('');
+}
+
+function withdrawUser() {
+    if(!confirm("정말 탈퇴하시겠습니까? 등록된 모든 물품과 정보가 삭제됩니다.")) return;
+    const idx = users.findIndex(u => u.id === currentUser.id);
+    if(idx > -1) {
+        for(let i = products.length - 1; i >= 0; i--) { if(products[i].owner === currentUser.id) products.splice(i, 1); }
+        users.splice(idx, 1); alert("그동안 이용해주셔서 감사합니다."); logout();
+    }
+}
+
+function goProfile() {
+    if(!currentUser) return;
+    document.getElementById('main-view').style.display = 'none';
+    document.getElementById('profile-view').style.display = 'block';
+    document.getElementById('my-name').innerText = currentUser.name;
+    document.getElementById('my-deposit').innerText = currentUser.deposit.toLocaleString();
+    renderMyProducts();
+}
+
+function goMain() {
+    document.getElementById('main-view').style.display = 'block';
+    document.getElementById('profile-view').style.display = 'none';
+    render(products);
+}
+
+function renderMyProducts() {
+    const container = document.getElementById('my-products-container');
+    const myItems = products.filter(p => p.owner === currentUser.id || p.owner === currentUser.name);
+    if(myItems.length === 0) { container.innerHTML = "<p style='color:#999; padding:20px;'>등록된 물품이 없습니다.</p>"; return; }
+    container.innerHTML = myItems.map(p => `
+        <div class="my-item-card">
+            <img src="${p.img}" class="my-item-img">
+            <div><div style="font-weight:700;">${p.title}</div><div style="font-size:13px; color:#1a73e8;">₩${p.price.toLocaleString()}</div></div>
+            <div class="my-item-btns"><button class="btn-edit" onclick="openEditModal(${p.id})">수정</button><button class="btn-del" onclick="deleteProduct(${p.id})">삭제</button></div>
+        </div>
+    `).join('');
+}
+
+function deleteProduct(id) {
+    if(!confirm("삭제하시겠습니까?")) return;
+    const idx = products.findIndex(p => p.id === id);
+    if(idx > -1) { products.splice(idx, 1); renderMyProducts(); alert("삭제되었습니다."); }
+}
+
+function openEditModal(id) {
+    const p = products.find(p => p.id === id);
+    document.getElementById('edit-id').value = p.id;
+    document.getElementById('edit-title').value = p.title;
+    document.getElementById('edit-price').value = p.price;
+    document.getElementById('edit-img-preview').innerHTML = `<img src="${p.img}">`;
+    uploadedImgBase64 = p.img;
+    openModal('modal-edit');
+}
+
+function saveEditProduct() {
+    const id = parseInt(document.getElementById('edit-id').value);
+    const p = products.find(p => p.id === id);
+    p.title = document.getElementById('edit-title').value;
+    p.price = parseInt(document.getElementById('edit-price').value);
+    p.img = uploadedImgBase64;
+    alert("수정 완료!"); closeModal(); renderMyProducts();
+}
+
+function checkNick() {
+    const n = document.getElementById('join-name').value;
+    const msg = document.getElementById('nick-msg');
+    if(!n) return alert("닉네임을 입력하세요.");
+    if(users.some(u => u.name === n)) { msg.innerText = "❌ 중복된 닉네임"; msg.className = "msg err"; isNickOk = false; }
+    else { msg.innerText = "✅ 사용 가능"; msg.className = "msg ok"; isNickOk = true; }
+}
+
+function sendEmailCode() {
+    if(!document.getElementById('join-email').value.includes('@')) return alert("이메일 형식 오류");
+    sentCode = Math.floor(100000 + Math.random() * 900000).toString();
+    alert("인증코드: " + sentCode);
+    document.getElementById('email-verify-area').style.display = 'block';
+}
+
+function verifyEmailCode() {
+    const msg = document.getElementById('email-msg');
+    if(document.getElementById('join-code').value === sentCode) { msg.innerText = "✅ 인증성공"; msg.className = "msg ok"; isEmailOk = true; }
+    else { msg.innerText = "❌ 인증실패"; msg.className = "msg err"; isEmailOk = false; }
+}
+
+function finalizeJoin() {
+    const id = document.getElementById('join-id').value, pw = document.getElementById('join-pw').value, name = document.getElementById('join-name').value;
+    if(!id || !pw || !name || !isNickOk || !isEmailOk) return alert("인증 및 입력을 모두 완료하세요.");
+    users.push({id, pw, name, deposit: 10000}); alert("가입 성공!"); closeModal();
+}
+
+function previewImage(input, targetId) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => { uploadedImgBase64 = e.target.result; document.getElementById(targetId).innerHTML = `<img src="${uploadedImgBase64}">`; }; reader.readAsDataURL(input.files[0]); } }
+
+function submitProduct() {
+    const title = document.getElementById('add-title').value, price = parseInt(document.getElementById('add-price').value);
+    if(!title || !price || !uploadedImgBase64) return alert("필수 정보를 입력하세요.");
+    products.unshift({ id: Date.now(), owner: currentUser.name, cat: document.getElementById('add-cat').value, loc: document.getElementById('add-loc').value, lat: 35.94 + Math.random() * 0.04, lng: 126.94 + Math.random() * 0.04, title, price, img: uploadedImgBase64 });
+    alert("물품이 등록되었습니다!"); closeModal(); render(products);
+}
+
+function doLogin() {
+    const u = users.find(x => x.id === document.getElementById('login-id').value && x.pw === document.getElementById('login-pw').value);
+    if(u) { currentUser = u; updateHeader(); closeModal(); } else alert("정보가 일치하지 않습니다.");
+}
+
+function updateHeader() {
+    const ag=document.getElementById('auth-group'), ug=document.getElementById('user-group'), ab=document.getElementById('btn-add-item');
+    if(currentUser) { ag.style.display='none'; ug.style.display='flex'; ab.style.display='block'; document.getElementById('user-name-display').innerText=currentUser.name; document.getElementById('user-deposit').innerText=currentUser.deposit.toLocaleString(); document.getElementById('profile-initial').innerText=currentUser.name[0]; }
+    else { ag.style.display='flex'; ug.style.display='none'; ab.style.display='none'; }
+}
+
+function filterCat(c, el) { document.querySelectorAll('.cat-item').forEach(x => x.classList.remove('active')); el.classList.add('active'); render(c==='all' ? products : products.filter(p=>p.cat===c)); }
+function filterLoc(l, el) { document.querySelectorAll('.loc-item').forEach(x => x.classList.remove('active')); el.classList.add('active'); render(l==='all' ? products : products.filter(p=>p.loc===l)); }
+function logout() { currentUser=null; updateHeader(); goMain(); }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
+function rentItem(p, d) { if(!currentUser) return alert("로그인 필요"); if(currentUser.deposit < (p+d)) return alert("보증금이 부족합니다."); currentUser.deposit-=(p+d); updateHeader(); alert("대여 완료!"); }
+
+window.onload = init;
+</script>
+</body>
+</html>
