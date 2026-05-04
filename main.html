@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEPOSIT - 익산 안심 렌탈</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f8f9fb; color: #333; }
+        
+        .nav { background: white; padding: 0 50px; height: 80px; display: flex; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 1000; }
+        .logo-container { display: flex; align-items: center; gap: 15px; cursor: pointer; text-decoration: none; color: inherit; }
+        .site-logo { width: 140px; height: auto; max-height: 60px; object-fit: contain; }
+        .nav-logo-text { font-weight: 800; color: #1a73e8; font-size: 26px; letter-spacing: -1.5px; }
+        
+        .nav-right { margin-left: auto; display: flex; align-items: center; gap: 15px; }
+        .btn-add-item { background: #34a853; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; display: none; }
+
+        /* 상단 레이아웃 */
+        .hero-container { display: flex; max-width: 1300px; margin: 20px auto; gap: 20px; padding: 0 20px; }
+        #map { flex: 7; height: 380px; border-radius: 15px; border: 1px solid #ddd; z-index: 1; }
+        .login-sidebar { flex: 3; background: white; border-radius: 15px; border: 1px solid #eee; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; }
+        
+        #auth-side-group { display: flex; flex-direction: column; gap: 10px; }
+        .side-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .btn-side-login { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .side-auth-links { display: flex; justify-content: center; gap: 15px; margin-top: 10px; font-size: 13px; color: #666; }
+        .side-auth-links span { cursor: pointer; text-decoration: underline; }
+
+        #user-side-group { display: none; flex-direction: column; gap: 15px; }
+        .side-profile-card { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .side-profile-img { width: 50px; height: 50px; background: #1a73e8; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; }
+        .side-deposit-box { background: #f1f7ff; padding: 15px; border-radius: 10px; border: 1px solid #e0ebff; }
+        .btn-side-logout { background: #f1f3f5; border: none; padding: 8px; border-radius: 6px; font-size: 12px; cursor: pointer; color: #888; align-self: flex-end; }
+
+        .main-container { max-width: 1300px; margin: 0 auto 60px; padding: 0 20px; display: flex; gap: 30px; }
+        .sidebar { width: 240px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: fit-content; position: sticky; top: 100px; }
+        .sidebar h3 { font-size: 15px; margin: 20px 0 10px; color: #1a73e8; border-bottom: 2px solid #f0f4f8; padding-bottom: 5px; }
+        .sidebar div { padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #555; transition: 0.2s; }
+        .sidebar div.active { background: #1a73e8 !important; color: white !important; font-weight: 700; }
+
+        .product-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .card-img { height: 180px; background: #eee; }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .card-body { padding: 15px; }
+
+        /* 모달 스타일 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; width: 420px; border-radius: 20px; padding: 30px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; font-weight: 600; }
+        .form-input { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; }
+        .btn-main { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        
+        /* 대여 모달 전용 */
+        .rent-info-box { background: #f8f9fb; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px dashed #ccc; }
+        .rent-info-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+
+        #profile-view { display: none; max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="#" class="logo-container" onclick="goMain(); return false;">
+        <img src="기연프.png" alt="DEPOSIT 로고" class="site-logo">
+        <span class="nav-logo-text">DEPOSIT</span>
+    </a>
+    <div class="nav-right">
+        <button id="btn-add-item" class="btn-add-item" onclick="openModal('modal-add')">물품 등록하기 +</button>
+    </div>
+</nav>
+
+<div id="main-view">
+    <div class="hero-container">
+        <div id="map"></div>
+        <div class="login-sidebar">
+            <div id="auth-side-group">
+                <h2 style="font-size: 18px; margin-bottom: 15px;">로그인</h2>
+                <input type="text" id="login-id" class="side-input" placeholder="아이디">
+                <input type="password" id="login-pw" class="side-input" placeholder="비밀번호">
+                <button class="btn-side-login" onclick="doLogin()">로그인</button>
+                <div class="side-auth-links">
+                    <span onclick="openModal('modal-join')">회원가입</span>
+                    <span>아이디/비번 찾기</span>
+                </div>
+            </div>
+            <div id="user-side-group">
+                <div class="side-profile-card">
+                    <div class="side-profile-img" id="side-initial">김</div>
+                    <div>
+                        <div style="font-size: 14px; color: #888;">반갑습니다!</div>
+                        <div style="font-size: 18px; font-weight: 800;"><span id="side-name-display"></span> 님</div>
+                    </div>
+                </div>
+                <div class="side-deposit-box">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">현재 사용 가능 보증금</div>
+                    <div style="font-size: 20px; font-weight: 800; color: #1a73e8;"><span id="side-deposit-display">0</span>원</div>
+                </div>
+                <button class="btn-main" onclick="alert('마이페이지 준비 중입니다.')" style="margin-top: 5px; background: #555;">마이페이지 / 내 물품 관리</button>
+                <button class="btn-side-logout" onclick="logout()">로그아웃</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <h3>📂 카테고리</h3>
+            <div onclick="filterCat('all', this)" class="cat-item active">전체 보기</div>
+            <div onclick="filterCat('book', this)" class="cat-item">도서/교육</div>
+            <div onclick="filterCat('tech', this)" class="cat-item">가전/디지털</div>
+            <div onclick="filterCat('leisure', this)" class="cat-item">스포츠/레저</div>
+            <h3>📍 지역</h3>
+            <div onclick="filterLoc('all', this)" class="loc-item active">전체 익산</div>
+            <div onclick="filterLoc('신동', this)" class="loc-item">신동</div>
+            <div onclick="filterLoc('모현동', this)" class="loc-item">모현동</div>
+            <div onclick="filterLoc('영등동', this)" class="loc-item">영등동</div>
+            <div onclick="filterLoc('남중동', this)" class="loc-item">남중동</div>
+        </aside>
+        <div class="product-grid" id="main-grid"></div>
+    </div>
+</div>
+
+<!-- 대여 신청 모달 -->
+<div class="modal" id="modal-rent">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px; border-bottom: 2px solid #1a73e8; padding-bottom: 10px;">대여 신청하기</h2>
+        <div class="rent-info-box">
+            <div class="rent-info-row"><span>물품명:</span> <strong id="rent-title">-</strong></div>
+            <div class="rent-info-row"><span>일일 대여료:</span> <strong id="rent-price">0원</strong></div>
+            <div class="rent-info-row"><span>필수 보증금:</span> <strong id="rent-deposit" style="color:#e81a1a;">0원</strong></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">대여 희망일 (일수)</label>
+            <input type="number" id="rent-days" class="form-input" value="1" min="1" oninput="calculateTotal()">
+        </div>
+        <div style="margin-top:20px; padding-top:15px; border-top:1px solid #eee;">
+            <div class="rent-info-row" style="font-size: 18px; font-weight: 800;">
+                <span>총 결제 금액:</span>
+                <span id="total-price" style="color:#1a73e8;">0원</span>
+            </div>
+        </div>
+        <button class="btn-main" onclick="finalizeRent()">확인 및 대여신청</button>
+        <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999; cursor:pointer;">취소</button>
+    </div>
+</div>
+
+<!-- 회원가입 모달 -->
+<div class="modal" id="modal-join">
+    <div class="modal-content">
+        <h2 style="margin-bottom:15px;">회원가입</h2>
+        <div class="form-group"><label class="form-label">아이디</label><input type="text" id="join-id" class="form-input"></div>
+        <div class="form-group"><label class="form-label">비밀번호</label><input type="password" id="join-pw" class="form-input"></div>
+        <div class="form-group"><label class="form-label">닉네임</label><input type="text" id="join-name" class="form-input"></div>
+        <button class="btn-main" onclick="finalizeJoin()">가입완료</button>
+        <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999; cursor:pointer;">취소</button>
+    </div>
+</div>
+
+<script>
+let map, markers = [];
+let currentUser = null;
+
+// 아이디: admin / 비번: admin 계정 추가
+let users = [
+    {id:'admin', pw:'admin', name:'admin', deposit:100000}
+];
+
+let selectedItem = null; 
+
+const products = [
+    { id:1, owner:'admin', cat:'book', loc:'신동', lat:35.967, lng:126.957, title:'[신동] 경제학 원론', price:5000, img:'https://images.unsplash.com/photo-1592492159418-39f319320569?w=400' },
+    { id:2, owner:'익산책벌레', cat:'book', loc:'모현동', lat:35.945, lng:126.939, title:'[모현동] 미생물학 실험서', price:8000, img:'https://images.unsplash.com/photo-1544640808-32ca72ac7f37?w=400' },
+    { id:5, owner:'사진작가', cat:'tech', loc:'영등동', lat:35.955, lng:126.975, title:'[영등동] 미러리스 카메라', price:25000, img:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400' }
+];
+
+function init() {
+    map = L.map('map').setView([35.955, 126.955], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    render(products);
+}
+
+function render(data) {
+    const grid = document.getElementById('main-grid');
+    grid.innerHTML = data.map(p => {
+        return `<div class="card">
+            <div class="card-img"><img src="${p.img}"></div>
+            <div class="card-body">
+                <div style="font-size:11px; color:#888;">대여자: ${p.owner}</div>
+                <div style="font-weight:700; height:35px; margin-top:3px;">${p.title}</div>
+                <div style="font-size:18px; font-weight:800; color:#1a73e8; margin-top:5px;">₩${p.price.toLocaleString()}</div>
+                <button onclick="rentItem(${p.id})" style="width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #1a73e8; background:white; color:#1a73e8; font-weight:bold; cursor:pointer;">대여 신청</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function rentItem(id) {
+    if(!currentUser) {
+        alert("로그인이 필요한 서비스입니다.");
+        return;
+    }
+    
+    selectedItem = products.find(p => p.id === id);
+    if(selectedItem) {
+        document.getElementById('rent-title').innerText = selectedItem.title;
+        document.getElementById('rent-price').innerText = selectedItem.price.toLocaleString() + "원";
+        document.getElementById('rent-deposit').innerText = (selectedItem.price * 2).toLocaleString() + "원"; 
+        document.getElementById('rent-days').value = 1;
+        calculateTotal();
+        openModal('modal-rent');
+    }
+}
+
+function calculateTotal() {
+    const days = document.getElementById('rent-days').value || 1;
+    const total = selectedItem.price * days;
+    document.getElementById('total-price').innerText = total.toLocaleString() + "원";
+}
+
+function finalizeRent() {
+    const days = document.getElementById('rent-days').value;
+    const total = selectedItem.price * days;
+    
+    if(currentUser.deposit < total) {
+        alert("보증금이 부족합니다. 충전 후 이용해주세요.");
+    } else {
+        alert(`${selectedItem.title} ${days}일간 대여 신청이 완료되었습니다!`);
+        closeModal();
+    }
+}
+
+function doLogin() {
+    const id = document.getElementById('login-id').value;
+    const pw = document.getElementById('login-pw').value;
+    const u = users.find(x => x.id === id && x.pw === pw);
+    if(u) { 
+        currentUser = u; 
+        updateUI(); 
+    } else {
+        alert("아이디 또는 비밀번호가 틀립니다.");
+    }
+}
+
+function logout() {
+    currentUser = null;
+    updateUI();
+    alert("로그아웃 되었습니다.");
+}
+
+function finalizeJoin() {
+    const id = document.getElementById('join-id').value;
+    const pw = document.getElementById('join-pw').value;
+    const name = document.getElementById('join-name').value;
+    
+    if(id && pw && name) {
+        users.push({id: id, pw: pw, name: name, deposit: 0});
+        alert("회원가입이 완료되었습니다! 로그인 해주세요.");
+        closeModal();
+    } else {
+        alert("모든 정보를 입력해주세요.");
+    }
+}
+
+function updateUI() {
+    const authGroup = document.getElementById('auth-side-group');
+    const userGroup = document.getElementById('user-side-group');
+    const addBtn = document.getElementById('btn-add-item');
+    if(currentUser) {
+        authGroup.style.display = 'none';
+        userGroup.style.display = 'flex';
+        addBtn.style.display = 'block';
+        document.getElementById('side-name-display').innerText = currentUser.name;
+        document.getElementById('side-deposit-display').innerText = currentUser.deposit.toLocaleString();
+        document.getElementById('side-initial').innerText = currentUser.name[0];
+    } else {
+        authGroup.style.display = 'flex';
+        userGroup.style.display = 'none';
+        addBtn.style.display = 'none';
+        document.getElementById('login-id').value = "";
+        document.getElementById('login-pw').value = "";
+    }
+}
+
+function goMain() { 
+    document.getElementById('main-view').style.display = 'block'; 
+}
+
+function openModal(id) { 
+    document.getElementById(id).classList.add('active'); 
+}
+
+function closeModal() { 
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); 
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
