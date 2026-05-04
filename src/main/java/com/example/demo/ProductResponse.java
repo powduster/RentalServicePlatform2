@@ -9,6 +9,7 @@ public class ProductResponse {
     private int price;
     private int deposit;
     private String imageUrl;
+    private boolean isRented = false; // 기본값 대여 가능
 
     public ProductResponse(Long id, String title, String owner, String category, String location, int price, String imageUrl) {
         this.id = id;
@@ -29,4 +30,6 @@ public class ProductResponse {
     public int getPrice() { return price; }
     public int getDeposit() { return deposit; }
     public String getImageUrl() { return imageUrl; }
+    public boolean isRented() { return isRented; }
+    public void setRented(boolean rented) { isRented = rented; }
 }
