@@ -15,13 +15,13 @@ public class ItemInfoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT 설정
     @Column(name = "ItemId")
-    private Long itemId;
+    private Integer itemId;
+    
+    @Column(name = "UserCode", nullable = false)
+    private Integer userCode;
 
     @Column(name = "ItemName", nullable = false, length = 50)
     private String itemName;
-
-    @Column(name = "UserID", nullable = false, length = 50)
-    private String userId;
 
     @Column(name = "PostingDay", insertable = false, updatable = false)
     private LocalDateTime postingDay;

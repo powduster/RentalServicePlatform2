@@ -20,11 +20,11 @@ public class TradeEntity {
     @Column(name = "ItemId")
     private Long itemId; // ItemInfo의 PK 참조
 
-    @Column(name = "LenderID", length = 50)
-    private String lenderId; // UserInfo의 UserID 참조
+    @Column(name = "LenderID")
+    private Integer lenderId; // UserInfo의 UserID 참조
 
-    @Column(name = "BorrowerID", length = 50)
-    private String borrowerId; // UserInfo의 UserID 참조
+    @Column(name = "BorrowerID")
+    private Integer borrowerId; // UserInfo의 UserID 참조
 
     @Column(name = "LendingTime")
     private LocalDateTime lendingTime;

@@ -1,11 +1,14 @@
 package com.example.demo.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
-import lombok.NoArgsConstructor;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter @Setter  // Getter와 Setter 자동 생성
@@ -15,16 +18,20 @@ import lombok.Setter;
 public class UserEntity{
 
   @Id
-    @Column(name = "UserID") // DB의 컬럼명과 매핑
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "UserCode")
+    private Integer userCode;
+
+     @Column(name = "UserID",length = 50)
     private String userID;
 
-    @Column(name = "UserPW")
+    @Column(name = "UserPW",length = 255)
     private String userPW;
 
-    @Column(name = "UserName")
+    @Column(name = "UserName",length = 50)
     private String userName;
 
-    @Column(name = "Email")
+    @Column(name = "Email",length = 50)
     private String email;
 
     @Column(name = "JoiningDay") // SQL에서 만든 이름과 맞춰주세요
