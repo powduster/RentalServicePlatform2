@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter @Setter  // Getter와 Setter 자동 생성
+@Getter @Setter
 @NoArgsConstructor
 
 @Entity
@@ -21,8 +21,8 @@ public class UserEntity{
   @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "UserCode")
     private Integer userCode;
-
-     @Column(name = "UserID",length = 50)
+    
+    @Column(name = "UserID",length = 50)
     private String userID;
 
     @Column(name = "UserPW",length = 255)
@@ -34,9 +34,9 @@ public class UserEntity{
     @Column(name = "Email",length = 50)
     private String email;
 
-    @Column(name = "JoiningDay") // SQL에서 만든 이름과 맞춰주세요
-    private LocalDateTime joiningDay; // TimeStamp 대신 LocalDateTime 권장
+    @Column(name = "JoiningDay")
+    private LocalDateTime joiningDay;
 
-    @Column(name = "Deposit") // SQL의 Deposit과 매핑
-    private Integer deposit; // SQL에서 int로 만들었으므로 Integer 사용
+    @Column(name = "Deposit")
+    private Integer deposit;
 }

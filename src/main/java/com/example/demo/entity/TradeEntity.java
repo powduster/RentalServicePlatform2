@@ -18,13 +18,13 @@ public class TradeEntity {
     private Long tradeId;
 
     @Column(name = "ItemId")
-    private Long itemId; // ItemInfo의 PK 참조
+    private Long itemId;
 
     @Column(name = "LenderID")
-    private Integer lenderId; // UserInfo의 UserID 참조
+    private Integer lenderId; 
 
     @Column(name = "BorrowerID")
-    private Integer borrowerId; // UserInfo의 UserID 참조
+    private Integer borrowerId; 
 
     @Column(name = "LendingTime")
     private LocalDateTime lendingTime;

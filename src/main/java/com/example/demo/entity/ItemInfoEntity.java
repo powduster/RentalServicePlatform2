@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class ItemInfoEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT 설정
+    @GeneratedValue(strategy = GenerationType.IDENTITY) 
     @Column(name = "ItemId")
     private Integer itemId;
     
