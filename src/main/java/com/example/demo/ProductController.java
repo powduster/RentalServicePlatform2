@@ -12,7 +12,7 @@ import java.util.List;
 public class ProductController {
 
     // 서버 메모리에 물품을 임시 저장할 리스트입니다. (DB 연동 전까지 사용)
-    private static List<ProductResponse> tempStorage = new ArrayList<>();
+    public static List<ProductResponse> tempStorage = new ArrayList<>();
 
     // 1. 물품 목록 조회 (GET)
     @GetMapping("/api/products")
