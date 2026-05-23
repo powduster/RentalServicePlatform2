@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEPOSIT - 익산 안심 렌탈</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        /* 기본 스타일링 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f8f9fb; color: #333; }
+        
+        /* 네비게이션 바 */
+        .nav { background: white; padding: 0 50px; height: 80px; display: flex; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 1000; gap: 20px; position: relative; }
+        .logo-container { display: flex; align-items: center; gap: 15px; cursor: pointer; text-decoration: none; color: inherit; }
+        .site-logo { width: 140px; height: auto; max-height: 60px; object-fit: contain; }
+        .nav-logo-text { font-weight: 800; color: #1a73e8; font-size: 26px; letter-spacing: -1.5px; }
+        .nav-right { margin-left: auto; display: flex; align-items: center; gap: 15px; }
+        .btn-add-item { background: #34a853; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; display: none; }
+
+        /* 히어로 섹션 */
+        .hero-container { display: flex; max-width: 1300px; margin: 20px auto; gap: 20px; padding: 0 20px; }
+        #map { flex: 7; height: 380px; border-radius: 15px; border: 1px solid #ddd; z-index: 1; }
+        .login-sidebar { flex: 3; background: white; border-radius: 15px; border: 1px solid #eee; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; }
+        
+        #auth-side-group { display: flex; flex-direction: column; gap: 10px; }
+        .side-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+        .btn-side-login { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .side-auth-links { display: flex; justify-content: center; gap: 15px; margin-top: 10px; font-size: 13px; color: #666; }
+        .side-auth-links span { cursor: pointer; text-decoration: underline; }
+
+        #user-side-group { display: none; flex-direction: column; gap: 15px; }
+        .side-profile-card { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .side-profile-img { width: 50px; height: 50px; background: #1a73e8; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; }
+        .side-deposit-box { background: #f1f7ff; padding: 15px; border-radius: 10px; border: 1px solid #e0ebff; }
+        .btn-side-logout { background: #f1f3f5; border: none; padding: 8px; border-radius: 6px; font-size: 12px; cursor: pointer; color: #888; align-self: flex-end; }
+        .btn-mypage-trigger { width: 100%; padding: 14px; background: #555; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 5px; }
+
+        /* 메인 콘텐츠 */
+        .main-container { max-width: 1300px; margin: 0 auto 60px; padding: 0 20px; display: flex; gap: 30px; }
+        .sidebar { width: 240px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: fit-content; position: sticky; top: 100px; }
+        .sidebar h3 { font-size: 15px; margin: 20px 0 10px; color: #1a73e8; border-bottom: 2px solid #f0f4f8; padding-bottom: 5px; }
+        .sidebar div { padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; color: #555; transition: 0.2s; }
+        .sidebar div.active { background: #1a73e8 !important; color: white !important; font-weight: 700; }
+
+        .product-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .card-img { height: 180px; background: #eee; }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .card-body { padding: 15px; }
+
+        /* 내물품관리 스타일 */
+        #profile-view { display: none; max-width: 1000px; margin: 40px auto; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .my-section-title { font-size: 20px; font-weight: 700; margin: 30px 0 15px; display: flex; align-items: center; gap: 10px; }
+        .my-section-title::before { content: ''; width: 4px; height: 20px; background: #1a73e8; border-radius: 2px; }
+        .my-product-list { display: flex; flex-direction: column; gap: 15px; }
+        .my-product-item { display: flex; align-items: center; padding: 15px; border: 1px solid #eee; border-radius: 12px; gap: 20px; }
+        .my-product-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+        .my-product-info { flex: 1; }
+        .btn-delete { background: #ff4d4f; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+        /* 모달 스타일 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; width: 420px; border-radius: 20px; padding: 30px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; font-weight: 600; }
+        .form-input { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; }
+        .btn-main { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        
+        .rent-info-box { background: #f8f9fb; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px dashed #ccc; }
+        .rent-info-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+        #img-preview { width: 100%; height: 150px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa; font-size: 12px; color: #999; }
+        #img-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .input-btn-row { display: flex; gap: 8px; }
+        .btn-small { padding: 0 12px; background: #f1f3f5; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="#" class="logo-container" onclick="goMain(); return false;">
+
+        <!-- ✅ 여기가 로고 SVG입니다 -->
+        <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="48" height="48" rx="10" fill="#1a73e8"/>
+            <!-- 핀 원형 -->
+            <circle cx="24" cy="19" r="9" fill="white"/>
+            <!-- 내부 링 -->
+            <circle cx="24" cy="19" r="5" fill="#1a73e8"/>
+            <!-- 중심 점 -->
+            <circle cx="24" cy="19" r="2.2" fill="white"/>
+            <!-- 핀 꼬리 -->
+            <path d="M24 28 L18.5 38 L24 43 L29.5 38 Z" fill="white"/>
+            <polygon points="24,44 21,39 27,39" fill="#1558b0"/>
+        </svg>
+
+        <span style="font-weight: 800; color: #1a73e8; font-size: 26px; letter-spacing: -1.5px;">DEPOSIT</span>
+    </a>
+    <div class="nav-right">
+<!-- 검색창 -->
+<div style="position:absolute; left:50%; transform:translateX(-50%); display:flex; justify-content:center; width:500px;">
+    <div style="display:flex; width:100%; max-width:500px; border:2px solid #1a73e8; border-radius:25px; overflow:hidden; background:white;">
+        <input 
+            type="text" 
+            id="search-input"
+            placeholder="물품명, 지역으로 검색..." 
+            style="flex:1; padding:10px 20px; border:none; outline:none; font-size:15px; font-family:'Noto Sans KR',sans-serif;"
+            oninput="doSearch()"
+            onkeydown="if(event.key==='Enter') doSearch()"
+        >
+        <button 
+            onclick="doSearch()"
+            style="padding:10px 20px; background:#1a73e8; border:none; cursor:pointer; color:white; font-size:16px;">
+            🔍
+        </button>
+    </div>
+</div>
+
+        <button id="btn-add-item" class="btn-add-item" onclick="openModal('modal-add')">물품 등록하기 +</button>
+    </div>
+</nav>
+<div id="main-view">
+    <div class="hero-container">
+        <div id="map"></div>
+        <div class="login-sidebar">
+            <div id="auth-side-group">
+                <h2 style="font-size: 18px; margin-bottom: 15px;">로그인</h2>
+                <input type="text" id="login-id" class="side-input" placeholder="아이디">
+                <input type="password" id="login-pw" class="side-input" placeholder="비밀번호">
+                <button class="btn-side-login" onclick="doLogin()">로그인</button>
+                <div class="side-auth-links">
+                    <span onclick="openModal('modal-join')">회원가입</span>
+                </div>
+            </div>
+            <div id="user-side-group">
+                <div class="side-profile-card">
+                    <div class="side-profile-img" id="side-initial">?</div>
+                    <div>
+                        <div style="font-size: 14px; color: #888;">반갑습니다!</div>
+                        <div style="font-size: 18px; font-weight: 800;"><span id="side-name-display"></span> 님</div>
+                    </div>
+                </div>
+                <div class="side-deposit-box">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">현재 사용 가능 보증금</div>
+                    <div style="font-size: 20px; font-weight: 800; color: #1a73e8;"><span id="side-deposit-display">0</span>원</div>
+                </div>
+                <button class="btn-mypage-trigger" onclick="goProfile()">내 물품 관리</button>
+                <button class="btn-side-logout" onclick="logout()">로그아웃</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <h3>카테고리</h3>
+            <div onclick="filterCat('all', this)" class="cat-item active">전체 보기</div>
+            <div onclick="filterCat('book', this)" class="cat-item">도서/교육</div>
+            <div onclick="filterCat('tech', this)" class="cat-item">가전/디지털</div>
+            <div onclick="filterCat('leisure', this)" class="cat-item">스포츠/레저</div>
+            <h3>지역</h3>
+            <div onclick="filterLoc('all', this)" class="loc-item active">전체 익산</div>
+            <div onclick="filterLoc('신동', this)" class="loc-item">신동</div>
+            <div onclick="filterLoc('모현동', this)" class="loc-item">모현동</div>
+            <div onclick="filterLoc('영등동', this)" class="loc-item">영등동</div>
+            <div onclick="filterLoc('남중동', this)" class="loc-item">남중동</div>
+        </aside>
+        <div class="product-grid" id="main-grid"></div>
+    </div>
+</div>
+
+<div id="profile-view">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 20px;">
+        <h2 style="font-size: 28px; font-weight: 800;">내 물품 관리</h2>
+        <button onclick="goMain()" style="padding:10px 20px; border-radius:8px; border:1px solid #ddd; background:white; cursor:pointer; font-weight: 600;">← 홈으로 돌아가기</button>
+    </div>
+    
+    <div class="my-section-title">내 정보</div>
+    <div style="background: #f1f7ff; padding: 20px; border-radius: 15px; display: flex; gap: 40px; align-items: center;">
+        <div>
+            <div style="color: #666; font-size: 14px;">보유금</div>
+            <div style="font-size: 24px; font-weight: 800; color: #1a73e8;"><span id="profile-deposit-display">0</span>원</div>
+        </div>
+        <div style="width: 1px; height: 40px; background: #ddd;"></div>
+        <div>
+            <div style="color: #666; font-size: 14px;">등록한 물품</div>
+            <div style="font-size: 24px; font-weight: 800;"><span id="profile-count-display">0</span>개</div>
+        </div>
+    </div>
+
+    <div class="my-section-title">내가 등록한 물품</div>
+    <div id="my-products-container" class="my-product-list">
+        </div>
+</div>
+
+<div class="modal" id="modal-rent">
+    <div class="modal-content">
+        <h2 style="margin-bottom:20px; border-bottom: 2px solid #1a73e8; padding-bottom: 10px;">대여 신청하기</h2>
+        <div class="rent-info-box">
+            <div class="rent-info-row"><span>물품명:</span> <strong id="rent-title">-</strong></div>
+            <div class="rent-info-row"><span>일일 대여료:</span> <strong id="rent-price">0원</strong></div>
+            <div class="rent-info-row"><span>보증금:</span> <strong id="rent-deposit" style="color:#e81a1a;">0원</strong></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">대여 희망일 (일수)</label>
+            <input type="number" id="rent-days" class="form-input" value="1" min="1" oninput="calculateTotal()">
+        </div>
+        <div style="margin-top:20px; padding-top:15px; border-top:1px solid #eee;">
+            <div class="rent-info-row" style="font-size: 18px; font-weight: 800;">
+                <span>총 결제 금액:</span>
+                <span id="total-price" style="color:#1a73e8;">0원</span>
+            </div>
+            <p style="font-size: 11px; color:#999; margin-top:5px;">* 총 결제 금액 = (대여료 × 일수) + 보증금</p>
+        </div>
+        <button class="btn-main" onclick="finalizeRent()">확인 및 대여신청</button>
+        <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999; cursor:pointer;">취소</button>
+    </div>
+</div>
+
+<div class="modal" id="modal-add"><div class="modal-content">
+    <h2 style="margin-bottom:15px;">내 물품 등록</h2>
+    <div class="form-group"><label class="form-label">물품 사진</label><input type="file" accept="image/*" onchange="previewImage(this, 'img-preview')"><div id="img-preview">이미지 미리보기</div></div>
+    <div class="form-group"><label class="form-label">물품명</label><input type="text" id="add-title" class="form-input"></div>
+    <div class="form-group"><label class="form-label">카테고리</label><select id="add-cat" class="form-input"><option value="book">도서/교육</option><option value="tech">가전/디지털</option><option value="leisure">스포츠/레저</option></select></div>
+    <div class="form-group"><label class="form-label">대여 지역</label><select id="add-loc" class="form-input"><option value="신동">신동</option><option value="모현동">모현동</option><option value="영등동">영등동</option><option value="남중동">남중동</option></select></div>
+    <div class="form-group"><label class="form-label">일일 대여료 (원)</label><input type="number" id="add-price" class="form-input"></div>
+    <button class="btn-main" style="background:#34a853;" onclick="submitProduct()">등록하기</button>
+    <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999; cursor:pointer;">취소</button>
+</div></div>
+
+<div class="modal" id="modal-join">
+  <div class="modal-content" style="width:460px;">
+    <h2 style="margin-bottom:20px; font-size:20px; font-weight:800;">회원가입</h2>
+
+    <!-- 아이디 -->
+    <div class="form-group">
+      <label class="form-label">아이디 <span style="color:#e81a1a;">*</span></label>
+      <input type="text" id="join-id" class="form-input" placeholder="아이디를 입력하세요">
+    </div>
+
+    <!-- 비밀번호 -->
+    <div class="form-group">
+      <label class="form-label">비밀번호 <span style="color:#e81a1a;">*</span></label>
+      <input type="password" id="join-pw" class="form-input" placeholder="8자 이상, 영문·숫자·특수문자 포함" oninput="joinCheckPw()">
+      <div id="join-pw-hint" style="font-size:12px; margin-top:4px; min-height:16px;"></div>
+    </div>
+
+    <!-- 비밀번호 확인 -->
+    <div class="form-group">
+      <label class="form-label">비밀번호 확인 <span style="color:#e81a1a;">*</span></label>
+      <input type="password" id="join-pw2" class="form-input" placeholder="비밀번호를 다시 입력하세요" oninput="joinCheckPw2()">
+      <div id="join-pw2-hint" style="font-size:12px; margin-top:4px; min-height:16px;"></div>
+    </div>
+
+    <!-- 이메일 인증 -->
+    <div class="form-group">
+      <label class="form-label">이메일 <span style="color:#e81a1a;">*</span></label>
+      <div style="display:flex; gap:8px;">
+        <input type="email" id="join-email" class="form-input" placeholder="example@email.com" style="flex:1;">
+        <button id="join-email-btn" onclick="joinSendCode()" style="padding:0 14px; background:#f1f3f5; border:1px solid #ddd; border-radius:8px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:600;">인증 발송</button>
+      </div>
+      <div id="join-code-row" style="display:none; margin-top:8px; gap:8px; display:none;">
+        <div style="display:flex; gap:8px;" id="join-code-inner">
+          <input type="text" id="join-code" class="form-input" placeholder="인증 코드 6자리" style="flex:1; max-width:180px;">
+          <button onclick="joinConfirmCode()" style="padding:0 14px; background:#f1f3f5; border:1px solid #ddd; border-radius:8px; font-size:13px; cursor:pointer; font-weight:600;">확인</button>
+        </div>
+      </div>
+      <div id="join-email-hint" style="font-size:12px; margin-top:4px; min-height:16px;"></div>
+    </div>
+
+    <!-- 닉네임 -->
+    <div class="form-group">
+      <label class="form-label">닉네임 <span style="color:#e81a1a;">*</span></label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="join-name" class="form-input" style="flex:1;">
+        <button onclick="joinCheckDup()" style="padding:0 14px; background:#f1f3f5; border:1px solid #ddd; border-radius:8px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:600;">중복확인</button>
+      </div>
+      <div id="join-name-hint" style="font-size:12px; margin-top:4px; min-height:16px;"></div>
+    </div>
+
+    <!-- 약관 동의 -->
+    <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden; margin-bottom:6px;">
+      <!-- 전체 동의 -->
+      <div style="display:flex; align-items:center; gap:10px; padding:11px 14px; background:#f8f9fb; border-bottom:1px solid #eee; cursor:pointer;" onclick="joinToggleAll()">
+        <input type="checkbox" id="join-all" style="width:16px; height:16px; cursor:pointer;" onclick="event.stopPropagation(); joinToggleAll()">
+        <label for="join-all" style="font-size:14px; font-weight:700; cursor:pointer;">약관 전체 동의</label>
+      </div>
+      <!-- 이용약관 -->
+      <div style="display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid #f0f0f0; font-size:13px; color:#555;">
+        <input type="checkbox" class="join-term" id="jt1" style="width:15px; height:15px;" onchange="joinSyncAll()">
+        <label for="jt1" style="cursor:pointer; flex:1;">이용약관 동의</label>
+        <span style="font-size:10px; padding:2px 7px; background:#fff0f0; color:#c0392b; border-radius:4px; font-weight:700;">필수</span>
+      </div>
+      <!-- 개인정보 -->
+      <div style="display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid #f0f0f0; font-size:13px; color:#555;">
+        <input type="checkbox" class="join-term" id="jt2" style="width:15px; height:15px;" onchange="joinSyncAll()">
+        <label for="jt2" style="cursor:pointer; flex:1;">개인정보 수집 및 이용 동의</label>
+        <span style="font-size:10px; padding:2px 7px; background:#fff0f0; color:#c0392b; border-radius:4px; font-weight:700;">필수</span>
+      </div>
+      <!-- 물품 파손 -->
+      <div style="display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid #f0f0f0; font-size:13px; color:#555;">
+        <input type="checkbox" class="join-term" id="jt3" style="width:15px; height:15px;" onchange="joinSyncAll()">
+        <label for="jt3" style="cursor:pointer; flex:1;">물품 파손 시 배상 책임 동의</label>
+        <span style="font-size:10px; padding:2px 7px; background:#fff0f0; color:#c0392b; border-radius:4px; font-weight:700;">필수</span>
+      </div>
+      <!-- 마케팅 -->
+      <div style="display:flex; align-items:center; gap:10px; padding:9px 14px; font-size:13px; color:#555;">
+        <input type="checkbox" class="join-term" id="jt4" style="width:15px; height:15px;" onchange="joinSyncAll()">
+        <label for="jt4" style="cursor:pointer; flex:1;">마케팅 정보 수신 동의</label>
+        <span style="font-size:10px; padding:2px 7px; background:#f1f3f5; color:#888; border-radius:4px;">선택</span>
+      </div>
+    </div>
+    <div id="join-terms-hint" style="font-size:12px; color:#e81a1a; margin-bottom:10px; min-height:16px;"></div>
+
+    <button class="btn-main" onclick="doJoin()">가입완료</button>
+    <button onclick="closeModal()" style="width:100%; border:none; background:none; margin-top:10px; color:#999; cursor:pointer; font-family:inherit; font-size:14px;">취소</button>
+  </div>
+</div>
+
+
+
+
+<script>
+let map, markers = [];
+let currentUser = null;
+let users = [{id:'admin', pw:'admin', name:'admin', deposit:100000}];
+let uploadedImgBase64 = "";
+let selectedItem = null;
+
+const products = [
+    { id:1, owner:'admin', cat:'book', loc:'신동', lat:35.967, lng:126.957, title:'[신동] 경제학 원론', price:5000, img:'https://images.unsplash.com/photo-1592492159418-39f319320569?w=400' },
+    { id:2, owner:'익산책벌레', cat:'book', loc:'모현동', lat:35.945, lng:126.939, title:'[모현동] 미생물학 실험서', price:8000, img:'https://images.unsplash.com/photo-1544640808-32ca72ac7f37?w=400' },
+    { id:3, owner:'코딩왕', cat:'book', loc:'신동', lat:35.969, lng:126.955, title:'[신동] 자바 프로그래밍', price:4000, img:'https://images.unsplash.com/photo-1589998059171-988d887df646?w=400' },
+    { id:4, owner:'심리술사', cat:'book', loc:'남중동', lat:35.948, lng:126.958, title:'[남중동] 심리학의 이해', price:6000, img:'https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400' },
+    { id:5, owner:'사진작가', cat:'tech', loc:'영등동', lat:35.955, lng:126.975, title:'[영등동] 미러리스 카메라', price:25000, img:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400' },
+    { id:6, owner:'영화광', cat:'tech', loc:'신동', lat:35.965, lng:126.958, title:'[신동] 삼성 빔프로젝터', price:15000, img:'https://images.unsplash.com/photo-1535016120720-40c646bebbdc?w=400' },
+    { id:7, owner:'앱등이', cat:'tech', loc:'모현동', lat:35.943, lng:126.936, title:'[모현동] 아이패드 에어 5', price:20000, img:'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400' },
+    { id:8, owner:'음악대장', cat:'tech', loc:'영등동', lat:35.958, lng:126.978, title:'[영등동] 노이즈캔슬링 헤드폰', price:10000, img:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400' },
+    { id:9, owner:'캠핑족', cat:'leisure', loc:'신동', lat:35.970, lng:126.953, title:'[신동] 4인용 텐트', price:12000, img:'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=400' },
+    { id:10, owner:'질주본능', cat:'leisure', loc:'남중동', lat:35.951, lng:126.954, title:'[남중동] 전동 킥보드', price:9000, img:'https://images.unsplash.com/photo-1558244410-67ada744249a?w=400' },
+    { id:11, owner:'등산가', cat:'leisure', loc:'모현동', lat:35.941, lng:126.932, title:'[모현동] 등산 배낭', price:5000, img:'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400' },
+    { id:12, owner:'나들이꾼', cat:'leisure', loc:'영등동', lat:35.953, lng:126.972, title:'[영등동] 피크닉 세트', price:3000, img:'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400' }
+];
+
+function init() {
+    map = L.map('map').setView([35.955, 126.955], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    render(products);
+}
+
+function render(data) {
+    const grid = document.getElementById('main-grid');
+    if(!grid) return;
+    markers.forEach(m => map.removeLayer(m)); markers = [];
+    grid.innerHTML = data.map(p => {
+        const marker = L.marker([p.lat, p.lng]).addTo(map).bindPopup(`<b>${p.title}</b><br>대여자: ${p.owner}`);
+        markers.push(marker);
+        return `<div class="card">
+            <div class="card-img"><img src="${p.img}"></div>
+            <div class="card-body">
+                <div style="font-size:11px; color:#888;">대여자: ${p.owner}</div>
+                <div style="font-weight:700; height:35px; margin-top:3px;">${p.title}</div>
+                <div style="font-size:18px; font-weight:800; color:#1a73e8; margin-top:5px;">₩${p.price.toLocaleString()}</div>
+                <button onclick="openRentModal(${p.id})" style="width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #1a73e8; background:white; color:#1a73e8; font-weight:bold; cursor:pointer;">대여 신청</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// 필터 기능
+function filterCat(c, el) { 
+    document.querySelectorAll('.cat-item').forEach(x => x.classList.remove('active')); 
+    el.classList.add('active'); 
+    render(c === 'all' ? products : products.filter(p => p.cat === c)); 
+}
+function filterLoc(l, el) { 
+    document.querySelectorAll('.loc-item').forEach(x => x.classList.remove('active')); 
+    el.classList.add('active'); 
+    render(l === 'all' ? products : products.filter(p => p.loc === l)); 
+}
+
+// 로그인/로그아웃
+function doLogin() {
+    const id = document.getElementById('login-id').value;
+    const pw = document.getElementById('login-pw').value;
+    const u = users.find(x => x.id === id && x.pw === pw);
+    if(u) { currentUser = u; updateUI(); } else alert("정보가 일치하지 않습니다.");
+}
+function logout() { currentUser = null; updateUI(); goMain(); }
+
+function updateUI() {
+    const authGroup = document.getElementById('auth-side-group');
+    const userGroup = document.getElementById('user-side-group');
+    const addBtn = document.getElementById('btn-add-item');
+    if(currentUser) {
+        authGroup.style.display = 'none'; userGroup.style.display = 'flex'; addBtn.style.display = 'block';
+        document.getElementById('side-name-display').innerText = currentUser.name;
+        document.getElementById('side-deposit-display').innerText = currentUser.deposit.toLocaleString();
+        document.getElementById('side-initial').innerText = currentUser.name[0];
+    } else {
+        authGroup.style.display = 'flex'; userGroup.style.display = 'none'; addBtn.style.display = 'none';
+    }
+}
+
+// 뷰 전환
+function goMain() { 
+    document.getElementById('main-view').style.display='block'; 
+    document.getElementById('profile-view').style.display='none'; 
+    setTimeout(() => map.invalidateSize(), 100); 
+}
+
+function goProfile() {
+    if(!currentUser) return alert("로그인 후 이용 가능합니다.");
+    document.getElementById('main-view').style.display='none';
+    document.getElementById('profile-view').style.display='block';
+    renderMyProducts();
+}
+
+// 내 물품 렌더링
+function renderMyProducts() {
+    const container = document.getElementById('my-products-container');
+    const myItems = products.filter(p => p.owner === currentUser.name);
+    
+    document.getElementById('profile-deposit-display').innerText = currentUser.deposit.toLocaleString();
+    document.getElementById('profile-count-display').innerText = myItems.length;
+
+    if(myItems.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:50px; color:#999;">등록된 물품이 없습니다.</div>`;
+        return;
+    }
+
+    container.innerHTML = myItems.map(p => `
+        <div class="my-product-item">
+            <img src="${p.img}">
+            <div class="my-product-info">
+                <div style="font-weight:700; font-size:16px;">${p.title}</div>
+                <div style="color:#666; font-size:14px;">${p.loc} | ₩${p.price.toLocaleString()}</div>
+            </div>
+            <button class="btn-delete" onclick="deleteProduct(${p.id})">삭제</button>
+        </div>
+    `).join('');
+}
+
+function deleteProduct(id) {
+    if(confirm("정말 이 물품을 삭제하시겠습니까?")) {
+        const idx = products.findIndex(p => p.id === id);
+        if(idx > -1) {
+            products.splice(idx, 1);
+            renderMyProducts();
+            render(products);
+        }
+    }
+}
+
+// 대여 신청 로직
+function openRentModal(id) {
+    if(!currentUser) return alert("로그인이 필요한 서비스입니다.");
+    selectedItem = products.find(p => p.id === id);
+    if(selectedItem) {
+        document.getElementById('rent-title').innerText = selectedItem.title;
+        document.getElementById('rent-price').innerText = selectedItem.price.toLocaleString() + "원";
+        document.getElementById('rent-deposit').innerText = Math.floor(selectedItem.price * 0.2).toLocaleString() + "원";
+        document.getElementById('rent-days').value = 1;
+        calculateTotal();
+        openModal('modal-rent');
+    }
+}
+
+function calculateTotal() {
+    const days = document.getElementById('rent-days').value || 1;
+    const dep = Math.floor(selectedItem.price * 0.2);
+    const total = (selectedItem.price * days) + dep;
+    document.getElementById('total-price').innerText = total.toLocaleString() + "원";
+}
+
+function finalizeRent() {
+    const days = document.getElementById('rent-days').value;
+    const dep = Math.floor(selectedItem.price * 0.2);
+    const total = (selectedItem.price * days) + dep;
+    if(currentUser.deposit < total) return alert("보유액이 부족합니다.");
+    currentUser.deposit -= total;
+    updateUI();
+    alert("대여 신청이 완료되었습니다!");
+    closeModal();
+}
+
+function submitProduct() {
+    const title = document.getElementById('add-title').value, price = parseInt(document.getElementById('add-price').value);
+    if(!title || !price || !uploadedImgBase64) return alert("정보를 모두 입력하세요.");
+    
+    products.unshift({ 
+        id: Date.now(), 
+        owner: currentUser.name, 
+        cat: document.getElementById('add-cat').value, 
+        loc: document.getElementById('add-loc').value, 
+        lat: 35.95, lng: 126.95, 
+        title, price, img: uploadedImgBase64 
+    });
+
+    alert("등록 완료!"); 
+    closeModal(); 
+    render(products);
+    if(document.getElementById('profile-view').style.display === 'block') renderMyProducts();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
+function previewImage(input, targetId) { 
+    if (input.files && input.files[0]) { 
+        const reader = new FileReader(); 
+        reader.onload = (e) => { 
+            uploadedImgBase64 = e.target.result; 
+            document.getElementById(targetId).innerHTML = `<img src="${uploadedImgBase64}">`; 
+        }; 
+        reader.readAsDataURL(input.files[0]); 
+    } 
+}
+
+// ── 회원가입 로직 ──
+let joinEmailVerified = false;
+let joinFakeCode = '';
+let joinNickOk = false;
+
+function joinCheckPw() {
+  const v = document.getElementById('join-pw').value;
+  const h = document.getElementById('join-pw-hint');
+  if (!v) { h.textContent = ''; return; }
+  const ok = v.length >= 8 && /[A-Za-z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v);
+  h.textContent = ok ? '✓ 사용 가능한 비밀번호입니다.' : '8자 이상, 영문·숫자·특수문자를 모두 포함해야 합니다.';
+  h.style.color = ok ? '#34a853' : '#e81a1a';
+  joinCheckPw2();
+}
+
+function joinCheckPw2() {
+  const v1 = document.getElementById('join-pw').value;
+  const v2 = document.getElementById('join-pw2').value;
+  const h = document.getElementById('join-pw2-hint');
+  if (!v2) { h.textContent = ''; return; }
+  const match = v1 === v2;
+  h.textContent = match ? '✓ 비밀번호가 일치합니다.' : '비밀번호가 일치하지 않습니다.';
+  h.style.color = match ? '#34a853' : '#e81a1a';
+}
+
+function joinSendCode() {
+  const email = document.getElementById('join-email').value;
+  const h = document.getElementById('join-email-hint');
+  if (!email || !email.includes('@')) {
+    h.textContent = '올바른 이메일 주소를 입력해주세요.'; h.style.color = '#e81a1a'; return;
+  }
+  joinFakeCode = String(Math.floor(100000 + Math.random() * 900000));
+  joinEmailVerified = false;
+  document.getElementById('join-code-inner').parentElement.style.display = 'block';
+  document.getElementById('join-email-btn').textContent = '재발송';
+  h.textContent = '인증 코드가 발송되었습니다. (데모 코드: ' + joinFakeCode + ')';
+  h.style.color = '#1a73e8';
+}
+
+function joinConfirmCode() {
+  const input = document.getElementById('join-code').value.trim();
+  const h = document.getElementById('join-email-hint');
+  if (input === joinFakeCode) {
+    joinEmailVerified = true;
+    h.textContent = '✓ 이메일 인증이 완료되었습니다.'; h.style.color = '#34a853';
+    document.getElementById('join-code-inner').parentElement.style.display = 'none';
+  } else {
+    h.textContent = '인증 코드가 올바르지 않습니다.'; h.style.color = '#e81a1a';
+  }
+}
+
+function joinCheckDup() {
+  const v = document.getElementById('join-name').value.trim();
+  const h = document.getElementById('join-name-hint');
+  if (!v) { h.textContent = '닉네임을 입력해주세요.'; h.style.color = '#e81a1a'; return; }
+  joinNickOk = true;
+  h.textContent = '✓ 사용 가능한 닉네임입니다.'; h.style.color = '#34a853';
+}
+
+function joinToggleAll() {
+  const all = document.getElementById('join-all').checked;
+  document.querySelectorAll('.join-term').forEach(c => c.checked = all);
+}
+
+function joinSyncAll() {
+  const all = [...document.querySelectorAll('.join-term')].every(c => c.checked);
+  document.getElementById('join-all').checked = all;
+}
+
+function doJoin() {
+  const id = document.getElementById('join-id').value.trim();
+  const pw = document.getElementById('join-pw').value;
+  const pw2 = document.getElementById('join-pw2').value;
+  const name = document.getElementById('join-name').value.trim();
+  const th = document.getElementById('join-terms-hint');
+
+  if (!id) { alert('아이디를 입력해주세요.'); return; }
+  if (!pw || pw.length < 8 || !/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
+    alert('비밀번호 조건을 확인해주세요.'); return;
+  }
+  if (pw !== pw2) { alert('비밀번호가 일치하지 않습니다.'); return; }
+  if (!joinEmailVerified) { alert('이메일 인증을 완료해주세요.'); return; }
+  if (!joinNickOk || !name) { alert('닉네임 중복확인을 완료해주세요.'); return; }
+
+  const reqOk = ['jt1','jt2','jt3'].every(id => document.getElementById(id).checked);
+  if (!reqOk) { th.textContent = '필수 약관에 모두 동의해주세요.'; return; }
+  th.textContent = '';
+
+  users.push({ id, pw, name, deposit: 50000 });
+  alert('가입이 완료되었습니다!\n기본 보증금 50,000원이 지급되었습니다.');
+  closeModal();
+
+  // 가입 후 자동 로그인
+  const newUser = users.find(u => u.id === id);
+  if (newUser) { currentUser = newUser; updateUI(); }
+
+  // 폼 초기화
+  joinEmailVerified = false; joinNickOk = false;
+  ['join-id','join-pw','join-pw2','join-email','join-code','join-name'].forEach(i => {
+    const el = document.getElementById(i); if(el) el.value = '';
+  });
+  ['join-pw-hint','join-pw2-hint','join-email-hint','join-name-hint','join-terms-hint'].forEach(i => {
+    const el = document.getElementById(i); if(el) el.textContent = '';
+  });
+  document.querySelectorAll('.join-term').forEach(c => c.checked = false);
+  document.getElementById('join-all').checked = false;
+}
+
+function doSearch() {
+    const keyword = document.getElementById('search-input').value.trim().toLowerCase();
+    if (!keyword) { render(products); return; }
+    const result = products.filter(p =>
+        p.title.toLowerCase().includes(keyword) ||
+        p.loc.toLowerCase().includes(keyword) ||
+        p.owner.toLowerCase().includes(keyword)
+    );
+    render(result);
+    if (result.length === 0) {
+        document.getElementById('main-grid').innerHTML = 
+            '<div style="grid-column:1/-1; text-align:center; padding:60px; color:#999; font-size:16px;">검색 결과가 없습니다.</div>';
+    }
+}
+
+
+window.onload = init;
+</script>
+</body>
+</html>
